@@ -1,0 +1,48 @@
+service: rds-manager
+
+package:
+  patterns:
+    - '!prerequisitos.txt'
+
+provider:
+  name: aws
+  runtime: python3.7
+  region: us-east-1
+  stage: ${opt:stage}
+  timeout: 30
+  versionFunctions: false
+  deploymentBucket:
+    name: serverless-cloudprotegida
+  tracing:
+    lambda: true
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - rds:Describe*
+            - rds:StartDBCluster
+            - rds:StopDBCluster
+            - rds:StartDBInstance
+            - rds:StopDBInstance
+            - rds:ListTagsForResource
+          Resource:
+            "*"
+  environment:
+    TARGET_TAG_KEY: automate
+    TARGET_TAG_VALUE: shutdown
+    REGION: us-east-1
+
+functions:
+  startrds:
+    handler: startrds.lambda_handler
+    name: ${sls:stage}-startRDS
+    description: Start RDS instances and clusters
+    events:
+      - schedule: cron(00 09 ? * * *)
+  stoprds:
+    handler: stoprds.lambda_handler
+    name: ${sls:stage}-stopRDS
+    description: Stop RDS instances and clusters
+    events:
+      - schedule: cron(00 00 ? * * *)
